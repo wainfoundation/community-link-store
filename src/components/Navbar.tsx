@@ -7,7 +7,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4 py-4">
         <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-foreground">
           <Package className="h-6 w-6" />
-          DigiSell
+          Cloudy
         </Link>
       </div>
     </nav>
