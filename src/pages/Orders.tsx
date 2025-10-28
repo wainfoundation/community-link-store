@@ -1,11 +1,46 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { mockOrders } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Order {
+  id: string;
+  product_name: string;
+  amount: number;
+  customer_name: string;
+  customer_email: string;
+  purchase_date: string;
+}
 
 const Orders = () => {
   const navigate = useNavigate();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('purchase_date', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Failed to load orders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,9 +56,13 @@ const Orders = () => {
             Back
           </Button>
           
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={fetchOrders}
+            disabled={loading}
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh Orders
+            {loading ? "Loading..." : "Refresh Orders"}
           </Button>
         </div>
 
@@ -39,7 +78,13 @@ const Orders = () => {
                 </tr>
               </thead>
               <tbody>
-                {mockOrders.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="p-16 text-center">
+                      <p className="text-muted-foreground">Loading orders...</p>
+                    </td>
+                  </tr>
+                ) : orders.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-16 text-center">
                       <h3 className="text-xl font-semibold text-foreground mb-2">No orders yet</h3>
@@ -47,13 +92,16 @@ const Orders = () => {
                     </td>
                   </tr>
                 ) : (
-                  mockOrders.map((order) => (
+                  orders.map((order) => (
                     <tr key={order.id} className="border-b border-border last:border-0">
-                      <td className="p-4 text-foreground">{order.productName}</td>
+                      <td className="p-4 text-foreground">{order.product_name}</td>
                       <td className="p-4 text-foreground">${order.amount.toFixed(2)}</td>
-                      <td className="p-4 text-foreground">{order.customerEmail}</td>
                       <td className="p-4 text-foreground">
-                        {order.purchaseDate.toLocaleDateString()}
+                        <div>{order.customer_name}</div>
+                        <div className="text-sm text-muted-foreground">{order.customer_email}</div>
+                      </td>
+                      <td className="p-4 text-foreground">
+                        {new Date(order.purchase_date).toLocaleDateString()}
                       </td>
                     </tr>
                   ))

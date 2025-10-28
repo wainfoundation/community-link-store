@@ -14,7 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          amount: number
+          customer_email: string
+          customer_name: string
+          id: string
+          product_id: string
+          product_name: string
+          purchase_date: string
+        }
+        Insert: {
+          amount: number
+          customer_email: string
+          customer_name: string
+          id?: string
+          product_id: string
+          product_name: string
+          purchase_date?: string
+        }
+        Update: {
+          amount?: number
+          customer_email?: string
+          customer_name?: string
+          id?: string
+          product_id?: string
+          product_name?: string
+          purchase_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string
+          digital_file_url: string | null
+          id: string
+          image_url: string
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          digital_file_url?: string | null
+          id?: string
+          image_url: string
+          name: string
+          price: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          digital_file_url?: string | null
+          id?: string
+          image_url?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

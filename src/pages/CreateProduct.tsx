@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Image as ImageIcon, File } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { addProduct } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const CreateProduct = () => {
@@ -35,25 +35,37 @@ const CreateProduct = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name || !price || !description || !imagePreview) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    const product = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      price: parseFloat(price),
-      description,
-      imageUrl: imagePreview,
-      digitalFileUrl: digitalFileName,
-      createdAt: new Date(),
-    };
+    const priceNum = parseFloat(price);
+    if (priceNum <= 0) {
+      toast.error("Price must be greater than 0");
+      return;
+    }
 
-    addProduct(product);
-    toast.success("Product created successfully!");
-    navigate("/");
+    try {
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          name,
+          price: priceNum,
+          description,
+          image_url: imagePreview,
+          digital_file_url: digitalFileName || null,
+        });
+
+      if (error) throw error;
+
+      toast.success("Product created successfully!");
+      navigate("/");
+    } catch (error) {
+      console.error("Error creating product:", error);
+      toast.error("Failed to create product");
+    }
   };
 
   return (

@@ -1,15 +1,61 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import { getProductById } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image_url: string;
+  digital_file_url: string | null;
+}
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const product = id ? getProductById(id) : undefined;
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setProduct(data);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      toast.error("Failed to load product");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <p className="text-center text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -21,10 +67,6 @@ const ProductDetail = () => {
       </div>
     );
   }
-
-  const handleBuyNow = () => {
-    toast.info("Payment integration will be set up later");
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,7 +86,7 @@ const ProductDetail = () => {
           <div>
             <div className="aspect-square overflow-hidden rounded-lg bg-card border border-border">
               <img
-                src={product.imageUrl}
+                src={product.image_url}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
@@ -67,7 +109,7 @@ const ProductDetail = () => {
               <Button
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 size="lg"
-                onClick={handleBuyNow}
+                onClick={() => navigate(`/checkout/${product.id}`)}
               >
                 Buy now
               </Button>

@@ -1,17 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, Package } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
-import { mockProducts, deleteProduct } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image_url: string;
+  digital_file_url: string | null;
+  created_at: string;
+}
 
 const Dashboard = () => {
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleDelete = (id: string) => {
-    deleteProduct(id);
-    setProducts([...mockProducts]);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProducts(products.filter(p => p.id !== id));
+      toast.success("Product deleted successfully");
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast.error("Failed to delete product");
+    }
   };
 
   return (
@@ -35,7 +80,11 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {products.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="text-center py-16">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-semibold mb-2 text-foreground">No products yet</h2>
@@ -52,7 +101,15 @@ const Dashboard = () => {
             {products.map((product) => (
               <ProductCard 
                 key={product.id} 
-                product={product}
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                  description: product.description,
+                  imageUrl: product.image_url,
+                  digitalFileUrl: product.digital_file_url || undefined,
+                  createdAt: new Date(product.created_at),
+                }}
                 onDelete={handleDelete}
               />
             ))}
