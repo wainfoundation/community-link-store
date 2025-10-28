@@ -3,10 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { orderSchema } from "@/lib/validations";
+import { z } from "zod";
 
 interface Product {
   id: string;
@@ -53,21 +55,28 @@ const Checkout = () => {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerName || !customerEmail || !product) {
-      toast.error("Please fill in all fields");
+    if (!product) {
+      toast.error("Product not found");
       return;
     }
 
     setProcessing(true);
     try {
+      // Validate customer information
+      orderSchema.parse({
+        customerName: customerName.trim(),
+        customerEmail: customerEmail.trim(),
+      });
+
+      // Create order
       const { error } = await supabase
         .from('orders')
         .insert({
           product_id: product.id,
           product_name: product.name,
           amount: product.price,
-          customer_email: customerEmail,
-          customer_name: customerName,
+          customer_email: customerEmail.trim(),
+          customer_name: customerName.trim(),
         });
 
       if (error) throw error;
@@ -76,7 +85,13 @@ const Checkout = () => {
       navigate("/orders");
     } catch (error) {
       console.error("Error creating order:", error);
-      toast.error("Failed to place order");
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to place order");
+      }
     } finally {
       setProcessing(false);
     }
@@ -166,7 +181,14 @@ const Checkout = () => {
                 size="lg"
                 disabled={processing}
               >
-                {processing ? "Processing..." : "Place Order"}
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Place Order"
+                )}
               </Button>
             </form>
           </div>

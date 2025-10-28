@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Image as ImageIcon, File } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, File, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { productSchema, imageFileSchema, digitalFileSchema } from "@/lib/validations";
+import { uploadProductImage, uploadDigitalProduct } from "@/lib/storage";
+import { z } from "zod";
 
 const CreateProduct = () => {
   const navigate = useNavigate();
@@ -15,47 +18,87 @@ const CreateProduct = () => {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [digitalFile, setDigitalFile] = useState<File | null>(null);
   const [digitalFileName, setDigitalFileName] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    try {
+      imageFileSchema.parse({ file });
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      e.target.value = '';
     }
   };
 
   const handleDigitalFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    try {
+      digitalFileSchema.parse({ file });
+      setDigitalFile(file);
       setDigitalFileName(file.name);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+      e.target.value = '';
     }
   };
 
   const handleSubmit = async () => {
-    if (!name || !price || !description || !imagePreview) {
+    if (!name || !price || !description) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    const priceNum = parseFloat(price);
-    if (priceNum <= 0) {
-      toast.error("Price must be greater than 0");
+    if (!imageFile) {
+      toast.error("Please upload a product image");
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
+      // Validate form data
+      const priceNum = parseFloat(price);
+      productSchema.parse({
+        name: name.trim(),
+        price: priceNum,
+        description: description.trim(),
+      });
+
+      // Upload image
+      const imageUrl = await uploadProductImage(imageFile);
+
+      // Upload digital file if provided
+      let digitalFileUrl: string | null = null;
+      if (digitalFile) {
+        digitalFileUrl = await uploadDigitalProduct(digitalFile);
+      }
+
+      // Insert product into database
       const { error } = await supabase
         .from('products')
         .insert({
-          name,
+          name: name.trim(),
           price: priceNum,
-          description,
-          image_url: imagePreview,
-          digital_file_url: digitalFileName || null,
+          description: description.trim(),
+          image_url: imageUrl,
+          digital_file_url: digitalFileUrl,
         });
 
       if (error) throw error;
@@ -64,7 +107,15 @@ const CreateProduct = () => {
       navigate("/");
     } catch (error) {
       console.error("Error creating product:", error);
-      toast.error("Failed to create product");
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create product");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -161,8 +212,16 @@ const CreateProduct = () => {
             <Button
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-6"
               onClick={handleSubmit}
+              disabled={isSubmitting}
             >
-              Create Product
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Product"
+              )}
             </Button>
           </div>
         </div>

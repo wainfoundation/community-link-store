@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { deleteProductImage, deleteDigitalProduct } from "@/lib/storage";
 
 interface Product {
   id: string;
@@ -44,12 +45,31 @@ const Dashboard = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Find the product to get file URLs
+      const product = products.find(p => p.id === id);
+      
+      // Delete product from database
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      // Delete associated files from storage
+      if (product) {
+        try {
+          if (product.image_url) {
+            await deleteProductImage(product.image_url);
+          }
+          if (product.digital_file_url) {
+            await deleteDigitalProduct(product.digital_file_url);
+          }
+        } catch (storageError) {
+          console.error("Error deleting files:", storageError);
+          // Don't show error to user as product is already deleted
+        }
+      }
 
       setProducts(products.filter(p => p.id !== id));
       toast.success("Product deleted successfully");
