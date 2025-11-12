@@ -74,22 +74,17 @@ Deno.serve(async (req) => {
     // Get user's Whop user ID from their profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('username')
+      .select('whop_user_id')
       .eq('id', user.id)
       .single();
 
-    // In a real implementation, you would need to map the user to their Whop user_id
-    // For now, we'll simulate the transfer
-    console.log('[Withdrawal] Processing transfer:', {
-      amount: withdrawal.amount,
-      userId: user.id,
-      username: profile?.username,
-    });
+    if (!profile?.whop_user_id) {
+      throw new Error('Please link your Whop account in Settings before requesting a withdrawal');
+    }
+
+    const whopUserId = profile.whop_user_id;
 
     // Create transfer via Whop API
-    // NOTE: This requires the user to have a Whop account
-    // In production, you'd need to properly map users to Whop user IDs
-    
     const transferResponse = await fetch('https://api.whop.com/api/v1/transfers', {
       method: 'POST',
       headers: {
@@ -99,8 +94,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         amount: withdrawal.amount,
         currency: 'usd',
-        destination_id: `user_${profile?.username || user.id}`, // This needs to be a valid Whop user ID
-        origin_id: Deno.env.get('WHOP_COMPANY_ID'), // Your company ID
+        destination_id: whopUserId,
+        origin_id: Deno.env.get('WHOP_COMPANY_ID'),
         notes: `Withdrawal request ${withdrawal_id}`,
         idempotence_key: `withdrawal_${withdrawal_id}`,
       }),

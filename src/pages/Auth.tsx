@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Cloud } from "lucide-react";
+import { WHOP_CONFIG } from "@/lib/whop-config";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,7 +15,9 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [whopLoading, setWhopLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -24,7 +27,61 @@ export default function Auth() {
       }
     };
     checkAuth();
-  }, [navigate]);
+
+    // Handle Whop OAuth callback
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    
+    if (code && state) {
+      handleWhopCallback(code, state);
+    }
+  }, [navigate, searchParams]);
+
+  const handleWhopCallback = async (code: string, state: string) => {
+    const storedState = sessionStorage.getItem('whop_oauth_state');
+    
+    if (state !== storedState) {
+      toast.error('Invalid OAuth state');
+      return;
+    }
+
+    setWhopLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('whop-oauth', {
+        body: { code, action: 'signin' }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success('Signed in with Whop!');
+        // Clear OAuth state
+        sessionStorage.removeItem('whop_oauth_state');
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Whop OAuth error:', error);
+      toast.error('Failed to sign in with Whop');
+    } finally {
+      setWhopLoading(false);
+    }
+  };
+
+  const handleWhopSignIn = () => {
+    const redirectUri = `${window.location.origin}/auth?whop_callback=true`;
+    const state = Math.random().toString(36).substring(7);
+    
+    sessionStorage.setItem('whop_oauth_state', state);
+    
+    const authUrl = new URL('https://whop.com/oauth');
+    authUrl.searchParams.append('client_id', WHOP_CONFIG.appId);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('state', state);
+    authUrl.searchParams.append('scope', 'openid profile email');
+    
+    window.location.href = authUrl.toString();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,10 +164,39 @@ export default function Auth() {
                 minLength={6}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || whopLoading}>
               {loading ? "Loading..." : isLogin ? "Sign in" : "Create account"}
             </Button>
           </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleWhopSignIn}
+            disabled={loading || whopLoading}
+          >
+            {whopLoading ? (
+              <>Loading...</>
+            ) : (
+              <>
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+                </svg>
+                Sign in with Whop
+              </>
+            )}
+          </Button>
+
           <div className="mt-4 text-center text-sm">
             <button
               onClick={() => setIsLogin(!isLogin)}

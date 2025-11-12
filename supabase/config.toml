@@ -3,5 +3,8 @@ project_id = "vckdnnnpvpouqvbkzhny"
 [functions.whop-webhook]
 verify_jwt = false
 
+[functions.whop-oauth]
+verify_jwt = false
+
 [functions.process-withdrawal]
 verify_jwt = true

@@ -110,6 +110,11 @@ export type Database = {
           store_name: string | null
           store_url: string | null
           username: string
+          whop_access_token: string | null
+          whop_linked_at: string | null
+          whop_refresh_token: string | null
+          whop_token_expires_at: string | null
+          whop_user_id: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -120,6 +125,11 @@ export type Database = {
           store_name?: string | null
           store_url?: string | null
           username: string
+          whop_access_token?: string | null
+          whop_linked_at?: string | null
+          whop_refresh_token?: string | null
+          whop_token_expires_at?: string | null
+          whop_user_id?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -130,6 +140,11 @@ export type Database = {
           store_name?: string | null
           store_url?: string | null
           username?: string
+          whop_access_token?: string | null
+          whop_linked_at?: string | null
+          whop_refresh_token?: string | null
+          whop_token_expires_at?: string | null
+          whop_user_id?: string | null
         }
         Relationships: []
       }
