@@ -20,27 +20,39 @@ export type Database = {
           customer_email: string
           customer_name: string
           id: string
+          platform_fee: number | null
           product_id: string
           product_name: string
           purchase_date: string
+          seller_amount: number | null
+          seller_id: string | null
+          whop_payment_id: string | null
         }
         Insert: {
           amount: number
           customer_email: string
           customer_name: string
           id?: string
+          platform_fee?: number | null
           product_id: string
           product_name: string
           purchase_date?: string
+          seller_amount?: number | null
+          seller_id?: string | null
+          whop_payment_id?: string | null
         }
         Update: {
           amount?: number
           customer_email?: string
           customer_name?: string
           id?: string
+          platform_fee?: number | null
           product_id?: string
           product_name?: string
           purchase_date?: string
+          seller_amount?: number | null
+          seller_id?: string | null
+          whop_payment_id?: string | null
         }
         Relationships: [
           {
@@ -118,6 +130,33 @@ export type Database = {
           store_name?: string | null
           store_url?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      seller_balances: {
+        Row: {
+          available_balance: number
+          id: string
+          pending_balance: number
+          total_earned: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          id?: string
+          pending_balance?: number
+          total_earned?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          id?: string
+          pending_balance?: number
+          total_earned?: number
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

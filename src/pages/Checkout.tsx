@@ -15,6 +15,7 @@ interface Product {
   image_url: string;
   digital_file_url: string | null;
   whop_plan_id: string | null;
+  user_id: string;
 }
 
 const Checkout = () => {
@@ -114,14 +115,23 @@ const Checkout = () => {
                   onComplete={handleComplete}
                   skipRedirect={true}
                 />
+                <p className="text-xs text-muted-foreground mt-4 text-center">
+                  Powered by Whop - Secure payment processing
+                </p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Product ID: {product.id} | Seller: {product.user_id}
+                </p>
               </div>
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
                   This product doesn't have a Whop payment plan configured yet.
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-4">
                   Please contact the seller to set up payment processing.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Product ID: {product.id}
                 </p>
               </div>
             )}

@@ -23,8 +23,16 @@ interface Product {
 interface Order {
   id: string;
   amount: number;
+  seller_amount: number;
   customer_email: string;
   purchase_date: string;
+  product_name: string;
+}
+
+interface SellerBalance {
+  available_balance: number;
+  pending_balance: number;
+  total_earned: number;
 }
 
 export default function SellerDashboard() {
@@ -32,6 +40,7 @@ export default function SellerDashboard() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [balance, setBalance] = useState<SellerBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalSales: 0, totalOrders: 0, totalProducts: 0 });
 
@@ -44,7 +53,7 @@ export default function SellerDashboard() {
   }, [user, authLoading, navigate]);
 
   const fetchData = async () => {
-    await Promise.all([fetchProducts(), fetchOrders()]);
+    await Promise.all([fetchProducts(), fetchOrders(), fetchBalance()]);
     setLoading(false);
   };
 
@@ -67,14 +76,29 @@ export default function SellerDashboard() {
     const { data, error } = await supabase
       .from("orders")
       .select("*")
+      .eq("seller_id", user?.id)
       .order("purchase_date", { ascending: false });
 
     if (error) {
       console.error("Error fetching orders:", error);
     } else {
       setOrders(data || []);
-      const totalSales = data?.reduce((sum, order) => sum + Number(order.amount), 0) || 0;
+      const totalSales = data?.reduce((sum, order) => sum + Number(order.seller_amount || 0), 0) || 0;
       setStats(prev => ({ ...prev, totalSales, totalOrders: data?.length || 0 }));
+    }
+  };
+
+  const fetchBalance = async () => {
+    const { data, error } = await supabase
+      .from("seller_balances")
+      .select("*")
+      .eq("user_id", user?.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching balance:", error);
+    } else {
+      setBalance(data);
     }
   };
 
@@ -119,13 +143,25 @@ export default function SellerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
+              <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.totalSales.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-primary">
+                ${balance?.available_balance?.toFixed(2) || '0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Ready to withdraw</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Earned</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${balance?.total_earned?.toFixed(2) || '0.00'}</div>
             </CardContent>
           </Card>
           <Card>
@@ -144,17 +180,6 @@ export default function SellerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalProducts}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Avg Order</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${stats.totalOrders > 0 ? (stats.totalSales / stats.totalOrders).toFixed(2) : '0.00'}
-              </div>
             </CardContent>
           </Card>
         </div>

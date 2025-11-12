@@ -15,6 +15,13 @@ interface Withdrawal {
   amount: number;
   status: string;
   requested_at: string;
+  processed_at: string | null;
+}
+
+interface SellerBalance {
+  available_balance: number;
+  pending_balance: number;
+  total_earned: number;
 }
 
 export default function Withdrawals() {
@@ -24,7 +31,7 @@ export default function Withdrawals() {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState<SellerBalance | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,21 +59,28 @@ export default function Withdrawals() {
 
   const fetchBalance = async () => {
     const { data, error } = await supabase
-      .from("orders")
-      .select("amount");
+      .from("seller_balances")
+      .select("*")
+      .eq("user_id", user?.id)
+      .maybeSingle();
 
     if (!error) {
-      const total = data?.reduce((sum, order) => sum + Number(order.amount), 0) || 0;
-      setBalance(total);
+      setBalance(data);
     }
   };
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const withdrawAmount = parseFloat(amount);
+    const availableBalance = balance?.available_balance || 0;
 
-    if (withdrawAmount > balance) {
+    if (withdrawAmount > availableBalance) {
       toast.error("Insufficient balance");
+      return;
+    }
+
+    if (withdrawAmount < 10) {
+      toast.error("Minimum withdrawal amount is $10");
       return;
     }
 
@@ -82,7 +96,7 @@ export default function Withdrawals() {
 
       if (error) throw error;
 
-      toast.success("Withdrawal request submitted!");
+      toast.success("Withdrawal request submitted! Processing typically takes 1-3 business days.");
       setAmount("");
       fetchData();
     } catch (error: any) {
@@ -109,43 +123,67 @@ export default function Withdrawals() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">Withdrawals</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader>
               <CardTitle>Available Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-primary">${balance.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-primary">${balance?.available_balance?.toFixed(2) || '0.00'}</p>
+              <p className="text-sm text-muted-foreground mt-2">Ready to withdraw</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Request Withdrawal</CardTitle>
+              <CardTitle>Pending</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleWithdraw} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max={balance}
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" disabled={submitting || balance === 0}>
-                  {submitting ? "Submitting..." : "Request Withdrawal"}
-                </Button>
-              </form>
+              <p className="text-3xl font-bold">${balance?.pending_balance?.toFixed(2) || '0.00'}</p>
+              <p className="text-sm text-muted-foreground mt-2">Being processed</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Earned</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">${balance?.total_earned?.toFixed(2) || '0.00'}</p>
+              <p className="text-sm text-muted-foreground mt-2">All-time earnings</p>
             </CardContent>
           </Card>
         </div>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Request Withdrawal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleWithdraw} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount (Minimum $10)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="10"
+                  max={balance?.available_balance || 0}
+                  placeholder="10.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  Withdrawals are processed via Whop and typically take 1-3 business days
+                </p>
+              </div>
+              <Button type="submit" disabled={submitting || !balance || balance.available_balance < 10}>
+                {submitting ? "Submitting..." : "Request Withdrawal"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
