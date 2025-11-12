@@ -118,9 +118,6 @@ const Checkout = () => {
                 <p className="text-xs text-muted-foreground mt-4 text-center">
                   Powered by Whop - Secure payment processing
                 </p>
-                <p className="text-xs text-muted-foreground text-center">
-                  Product ID: {product.id} | Seller: {product.user_id}
-                </p>
               </div>
             ) : (
               <div className="text-center py-8">

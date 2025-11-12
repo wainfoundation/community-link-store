@@ -2,6 +2,15 @@
 
 This guide will help you set up Whop payments for your Cloudy marketplace.
 
+## Your Whop Credentials
+
+Your integration is configured with:
+- **App ID**: `app_9N0CoKFUVVFCFr`
+- **Company ID**: `biz_joHaHyVLOTmzlT`
+- **Agent User ID**: `user_jB6lFTJYYzq9p`
+- **API Key**: Stored securely in secrets ✓
+- **Webhook Secret**: Stored securely in secrets ✓
+
 ## Overview
 
 Cloudy uses Whop for secure payment processing. When customers purchase products:
@@ -23,39 +32,58 @@ Cloudy uses Whop for secure payment processing. When customers purchase products
 3. Select permissions: `payments:read`, `transfers:write`
 4. Copy your API key - you'll need this
 
-### 3. Configure Webhook (Already Done!)
-Your webhook endpoint is already deployed at:
+### 3. Configure Webhook ✓ DONE
+Your webhook endpoint is deployed and configured at:
 ```
 https://vckdnnnpvpouqvbkzhny.supabase.co/functions/v1/whop-webhook
 ```
 
-To register it with Whop:
-1. Go to Developer Dashboard
-2. Click "Create Webhook"
+**Next Steps in Whop Dashboard:**
+1. Go to [Developer Dashboard](https://whop.com/dashboard/developer)
+2. Click "Create Webhook" (if not already created)
 3. Enter the URL above
 4. Select API version: `v1`
 5. Select event: `payment.succeeded`
-6. Copy the webhook secret
+6. Save and copy the webhook secret
+7. The webhook secret should already be configured in your secrets
 
-### 4. Add Secrets to Lovable
-The secrets have already been added! They are:
-- `WHOP_API_KEY` - Your Whop API key
-- `WHOP_WEBHOOK_SECRET` - Your webhook secret
+### 4. Secrets Configuration ✓ DONE
+All required secrets have been added:
+- ✓ `WHOP_API_KEY` - Your Whop API key
+- ✓ `WHOP_WEBHOOK_SECRET` - Your webhook secret
+- ✓ `WHOP_COMPANY_ID` - Your company ID (biz_joHaHyVLOTmzlT)
 
-### 5. Create Products with Whop Plans
+## Quick Start Guide
 
-For each product you create:
+Now that your credentials are configured, here's how to start selling:
 
-1. **Create a Whop Plan** (in Whop Dashboard):
-   - Go to Dashboard → Checkout links
-   - Click "+ Create checkout link"
-   - Choose "One-time" payment
-   - Set your price
-   - Copy the Plan ID (looks like `plan_XXXXXXXXX`)
+### Step 1: Create a Whop Plan
+1. Go to your [Whop Dashboard → Checkout links](https://whop.com/dashboard/links/checkout)
+2. Click "+ Create checkout link"
+3. Choose "One-time" payment type
+4. Set your price (e.g., $9.99)
+5. Configure any additional options (stock, description, etc.)
+6. Click "Create"
+7. **Copy the Plan ID** - it looks like `plan_XXXXXXXXX`
 
-2. **Add Plan ID to Your Product**:
-   - When creating a product in Cloudy, paste the Plan ID in the "Whop Plan ID" field
-   - Without this, customers won't be able to purchase the product
+### Step 2: Create Product in Cloudy
+1. Navigate to your Dashboard in Cloudy
+2. Click "Create Product"
+3. Fill in product details:
+   - Product name
+   - Price (should match your Whop plan)
+   - Description
+   - Upload product image
+   - Upload digital file (optional)
+   - **Paste the Whop Plan ID** from Step 1
+4. Click "Create Product"
+
+### Step 3: Test Purchase
+1. View your product in the Discover page
+2. Click "Buy now"
+3. Complete a test purchase with Whop test card: `4242 4242 4242 4242`
+4. Verify the order appears in your Dashboard
+5. Check that your balance was updated
 
 ## How It Works
 
