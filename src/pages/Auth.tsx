@@ -61,9 +61,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-primary text-primary-foreground p-3 rounded-full">
-              <Cloud className="h-8 w-8" />
-            </div>
+            <Cloud className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold">
             {isLogin ? "Welcome back" : "Create your store"}

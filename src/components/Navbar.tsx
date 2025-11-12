@@ -19,9 +19,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-primary transition-colors">
-            <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-              <Cloud className="h-5 w-5" />
-            </div>
+            <Cloud className="h-6 w-6 text-primary" />
             Cloudy
           </Link>
 
