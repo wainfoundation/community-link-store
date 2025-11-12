@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
-import { Product } from "@/types/product";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link as LinkIcon, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {
-  product: Product;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    image_url: string;
+  };
   onDelete: (id: string) => void;
 }
 
@@ -32,7 +36,7 @@ const ProductCard = ({ product, onDelete }: ProductCardProps) => {
       <Link to={`/product/${product.id}`}>
         <div className="aspect-square overflow-hidden bg-muted">
           <img
-            src={product.imageUrl}
+            src={product.image_url}
             alt={product.name}
             className="w-full h-full object-cover"
           />

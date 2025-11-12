@@ -81,6 +81,14 @@ const CreateProduct = () => {
         description: description.trim(),
       });
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to create products");
+        navigate("/auth");
+        return;
+      }
+
       // Upload image
       const imageUrl = await uploadProductImage(imageFile);
 
@@ -99,12 +107,13 @@ const CreateProduct = () => {
           description: description.trim(),
           image_url: imageUrl,
           digital_file_url: digitalFileUrl,
+          user_id: user.id,
         });
 
       if (error) throw error;
 
       toast.success("Product created successfully!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error creating product:", error);
       if (error instanceof z.ZodError) {
