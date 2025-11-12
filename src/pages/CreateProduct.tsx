@@ -17,6 +17,7 @@ const CreateProduct = () => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [whopPlanId, setWhopPlanId] = useState("");
   const [imagePreview, setImagePreview] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [digitalFile, setDigitalFile] = useState<File | null>(null);
@@ -107,6 +108,7 @@ const CreateProduct = () => {
           description: description.trim(),
           image_url: imageUrl,
           digital_file_url: digitalFileUrl,
+          whop_plan_id: whopPlanId.trim() || null,
           user_id: user.id,
         });
 
@@ -197,6 +199,21 @@ const CreateProduct = () => {
                 onChange={(e) => setDescription(e.target.value)}
                 className="bg-input border-border min-h-[100px]"
               />
+            </div>
+
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Whop Plan ID (Required for Payments)
+              </label>
+              <Input
+                placeholder="plan_XXXXXXXXX"
+                value={whopPlanId}
+                onChange={(e) => setWhopPlanId(e.target.value)}
+                className="bg-input border-border"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Get your plan ID from your Whop dashboard. Without this, customers won't be able to purchase.
+              </p>
             </div>
 
             <div>

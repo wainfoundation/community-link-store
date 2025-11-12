@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { orderSchema } from "@/lib/validations";
-import { z } from "zod";
+import { WhopCheckoutEmbed } from "@whop/checkout/react";
 
 interface Product {
   id: string;
@@ -17,6 +14,7 @@ interface Product {
   description: string;
   image_url: string;
   digital_file_url: string | null;
+  whop_plan_id: string | null;
 }
 
 const Checkout = () => {
@@ -24,9 +22,6 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -52,49 +47,9 @@ const Checkout = () => {
     }
   };
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!product) {
-      toast.error("Product not found");
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      // Validate customer information
-      orderSchema.parse({
-        customerName: customerName.trim(),
-        customerEmail: customerEmail.trim(),
-      });
-
-      // Create order
-      const { error } = await supabase
-        .from('orders')
-        .insert({
-          product_id: product.id,
-          product_name: product.name,
-          amount: product.price,
-          customer_email: customerEmail.trim(),
-          customer_name: customerName.trim(),
-        });
-
-      if (error) throw error;
-
-      toast.success("Order placed successfully! Check your email for details.");
-      navigate("/orders");
-    } catch (error) {
-      console.error("Error creating order:", error);
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to place order");
-      }
-    } finally {
-      setProcessing(false);
-    }
+  const handleComplete = () => {
+    toast.success("Payment completed successfully!");
+    navigate("/discover");
   };
 
   if (loading) {
@@ -152,45 +107,24 @@ const Checkout = () => {
               </div>
             </div>
 
-            <form onSubmit={handleCheckout} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  required
+            {product.whop_plan_id ? (
+              <div className="mt-6">
+                <WhopCheckoutEmbed 
+                  planId={product.whop_plan_id} 
+                  onComplete={handleComplete}
+                  skipRedirect={true}
                 />
               </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  required
-                />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  This product doesn't have a Whop payment plan configured yet.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Please contact the seller to set up payment processing.
+                </p>
               </div>
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                size="lg"
-                disabled={processing}
-              >
-                {processing ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Place Order"
-                )}
-              </Button>
-            </form>
+            )}
           </div>
       </main>
     </div>
